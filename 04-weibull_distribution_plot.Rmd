@@ -1,0 +1,27 @@
+---
+title: "weibull_distribution"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.path = '../figs/')
+```
+
+```{r weibull.scale.shape,echo=FALSE}
+mean<-25.29704
+median<-20.8
+k=seq(0,10,0.01)
+left=gamma(1+1/k)
+right=mean/median*log(2)^(1/k)
+loc=which.min(abs(left-right))
+k<-k[loc]
+lambdaw=median/log(2)^(1/k)
+```
+
+```{r weibull_density,echo=FALSE}
+Age<- seq(0,100,by =0.01)
+density=dweibull(Age,shape=k,scale=lambdaw)
+plot(density~Age,main=" ",type="l",ylab="Density")
+text(90,0.026,"k=1.32")
+text(94,0.024,expression(lambda==paste(27.45681)))
+```
