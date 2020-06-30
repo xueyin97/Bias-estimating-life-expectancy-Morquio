@@ -9,11 +9,10 @@ lambdaw=median/log(2)^(1/k)
 return(c(k,lambdaw))
 }
 
-##N:every year a baby born with Morquio Syndrome A
 ##meanst,medianst:the original mean and median without time dependent
 ##meandep:mean age of death(life expectancy)increases by meandep each year
 ##mediandep:median age of death(life expectancy)increases by mediandep each year
-##N:number of study years
+##N:number of study years(every year a baby born with Morquio Syndrome A)
 weibull_eventtime<-function(meanst,medianst,meandep,mediandep,N)
 { 
   surv=0
