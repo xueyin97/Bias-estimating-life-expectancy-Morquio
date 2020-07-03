@@ -7,9 +7,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, fig.path = '../figs/')
 ```
 
+```{r read data,include=FALSE}
+survival<-read.csv("../data/M_Type_A_survival.csv")
+```
+
 ```{r weibull.scale.shape,echo=FALSE}
-mean<-25.29704
-median<-20.8
+mean<-mean(survival$Age.at.death)
+median<-median(survival$Age.at.death)
 k=seq(0,10,0.01)
 left=gamma(1+1/k)
 right=mean/median*log(2)^(1/k)
