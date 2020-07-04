@@ -9,9 +9,9 @@ knitr::opts_chunk$set(echo = TRUE, fig.path="../figs/")
 
 ```{r loadpackage,ehco=FALSE}
 library(simsurv)
-source("weibull_function.R")
 library(dplyr)
 library(ggplot2)
+source("weibull_function.R")
 ```
 
 ```{r constant,include=FALSE}
