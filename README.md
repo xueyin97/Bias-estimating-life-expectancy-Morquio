@@ -10,6 +10,10 @@ figure2_real_means_medians.Rmd and .html: Rmd file displays the changes of real 
 
 figure3_boxplots_of_four_scenarios.Rmd and .html: Rmd file has four boxplots showing the average mean and median survival time of individuals deceased during the last 36 years and comparing them with the true mean and median values.
 
+Tabel1.rmd and .html: Rmd file displays the true mean and median survival, average estimated mean and median survival and naive mean and median survival across 1000 simulation runs, for each of the 4 scenarios. 
+
+Tabel2.rmd and.html: Rmd file displays the Kaplan Meier median survival time across 1000 simulation runs, for each of the 4 scenarios
+
 ## Data directory
 M_Type_A_survival.csv: Deaths that occurred between 1975 and 2010 in the United Kingdom collected by the the Society for Mucopolysaccharide Disease in the United Kingdom. A total of 27 deaths were recorded, with the dataset being made fully available and including date of birth, gender, date of death, and primary cause of death.  
 
