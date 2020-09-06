@@ -45,7 +45,6 @@ for (i in 1:1000){
   time=ifelse(Year.of.death>500,500-Year.of.birth,Age.of.death)
   status=ifelse(Year.of.death>500,0,1)
   df=data.frame(Year.of.birth,Year.of.death,Age.of.death,time,status)
-  df=rbind(df,df)
   #died since 465
   df1=df%>%filter(Year.of.death>=465)
   #born since 465
@@ -96,7 +95,6 @@ Year.of.death<-Year.of.birth+Age.of.death
      time=ifelse(Year.of.death>500,500-Year.of.birth,Age.of.death)
   status=ifelse(Year.of.death>500,0,1)
   df=data.frame(Year.of.birth,Year.of.death,Age.of.death,time,status)
-  df=rbind(df,df)
   #died since 465
   df1=df%>%filter(Year.of.death>=465)
   #born since 465
@@ -150,7 +148,6 @@ Year.of.death<-Year.of.birth+Age.of.death
     time=ifelse(Year.of.death>500,500-Year.of.birth,Age.of.death)
   status=ifelse(Year.of.death>500,0,1)
   df=data.frame(Year.of.birth,Year.of.death,Age.of.death,time,status)
-  df=rbind(df,df)
   df1=df%>%filter(Year.of.death>=465)
   df2=df%>%filter(Year.of.birth>=465)
 #died since 465
@@ -206,7 +203,6 @@ Year.of.death<-Year.of.birth+Age.of.death
   time=ifelse(Year.of.death>500,500-Year.of.birth,Age.of.death)
   status=ifelse(Year.of.death>500,0,1)
   df=data.frame(Year.of.birth,Year.of.death,Age.of.death,time,status)
-  df=rbind(df,df)
   #died since 465
   df1=df%>%filter(Year.of.death>=465)
   #born since 465
