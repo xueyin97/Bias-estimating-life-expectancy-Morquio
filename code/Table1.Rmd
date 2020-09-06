@@ -1,0 +1,181 @@
+---
+title: "Table1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r loadpackage,ehco=FALSE}
+library(simsurv)
+library(dplyr)
+library(ggplot2)
+library(reshape)
+library(survival)
+source("weibull_function.R")
+```
+
+```{r read data,include=FALSE}
+survival<-read.csv("../data/M_Type_A_survival.csv")
+```
+
+Scenario 1: Constant life expectancy
+
+```{r KM scenario1, echo=FALSE}
+set.seed(1)
+N=500
+#every individual was born each year during the 500 years
+Year.of.birth<-seq(1,N,1)
+mean_=mean(survival$Age.at.death)
+median_=median(survival$Age.at.death)
+meandep=0
+mediandep=0
+died_mean=0
+died_median=0
+born_mean=0
+born_median=0
+for (i in 1:1000){
+  #simulate survival time during 500 years
+  Age.of.death<-weibull_eventtime(mean_,median_,meandep,mediandep,N)
+  Year.of.death<-Year.of.birth+Age.of.death
+  df=data.frame(Year.of.birth,Year.of.death,Age.of.death)
+  #died since 465 and before the end of the study
+  df1=df%>%filter(Year.of.death>=465,Year.of.death<=500)
+  #born since 465
+  df2=df%>%filter(Year.of.birth>=465)
+  #died since Year 465 
+  died_mean[i]=mean(df1$Age.of.death)
+  died_median[i]=median(df1$Age.of.death)
+  #born since Year 465
+  born_mean[i]=mean(df2$Age.of.death)
+  born_median[i]=median(df2$Age.of.death)
+}
+list("true.mean"=mean_, "estimated.mean"=mean(died_mean),"std.mean"=sd(died_mean),"naive.mean"=mean(born_mean),
+"true.median"=median_, "estimated.median"=mean(died_median),"std.median"=sd(born_median),"naive.median"=mean(born_median))
+```
+
+Scenario 2: Gradually increasing life expectancy
+
+```{r KM scenario2,echo=FALSE}
+set.seed(1)
+N=500
+#every individual was born each year during the 500 years
+Year.of.birth<-seq(1,N,1)
+mean_=mean(survival$Age.at.death)
+median_=median(survival$Age.at.death)
+meandep=0.05
+mediandep=0.05
+died_mean=0
+died_median=0
+born_mean=0
+born_median=0
+for (i in 1:1000){
+#simulate survival time during 500 years
+  Age.of.death<-weibull_eventtime(mean_,median_,meandep,mediandep,N)
+  Year.of.death<-Year.of.birth+Age.of.death
+  df=data.frame(Year.of.birth,Year.of.death,Age.of.death)
+  #died since 465 and before the end of the study
+  df1=df%>%filter(Year.of.death>=465,Year.of.death<=500)
+  #born since 465
+  df2=df%>%filter(Year.of.birth>=465)
+  #died since Year 465 
+  died_mean[i]=mean(df1$Age.of.death)
+  died_median[i]=median(df1$Age.of.death)
+  #born since Year 465
+  born_mean[i]=mean(df2$Age.of.death)
+  born_median[i]=median(df2$Age.of.death)
+}
+order=0:499
+means=mean_+meandep*order
+medians=median_+mediandep*order
+meanavg=sum(means[465:500])/length(means[465:500])
+medianavg=sum(medians[465:500])/length(medians[465:500])
+list("true.mean"=meanavg, "estimated.mean"=mean(died_mean),"std.mean"=sd(died_mean),"naive.mean"=mean(born_mean),
+"true.median"=medianavg, "estimated.median"=mean(died_median),"std.median"=sd(born_median),"naive.median"=mean(born_median))
+```
+
+Scenario 3: Gradually increasing life expectancy that later stabilizes
+
+```{r KM scenario3,echo=FALSE}
+set.seed(1)
+N=500
+#every individual was born each year during the 500 years
+Year.of.birth<-seq(1,N,1)
+mean_=mean(survival$Age.at.death)
+median_=median(survival$Age.at.death)
+meandep=0.05
+mediandep=0.05
+died_mean=0
+died_median=0
+born_mean=0
+born_median=0
+#life expectancy stop rising at the 460th year
+start=1
+end=460
+for (i in 1:1000){
+#simulate survival time during 500 years
+  Age.of.death<-weibull_eventtime_stop(mean_,median_,meandep,mediandep,N,start,end)
+  Year.of.death<-Year.of.birth+Age.of.death
+  df=data.frame(Year.of.birth,Year.of.death,Age.of.death)
+  #died since 465 and before the end of the study
+  df1=df%>%filter(Year.of.death>=465,Year.of.death<=500)
+  #born since 465
+  df2=df%>%filter(Year.of.birth>=465)
+  #died since Year 465 
+  died_mean[i]=mean(df1$Age.of.death)
+  died_median[i]=median(df1$Age.of.death)
+  #born since Year 465
+  born_mean[i]=mean(df2$Age.of.death)
+  born_median[i]=median(df2$Age.of.death)
+}
+order=c(0:(end-1),rep(end-1,500-end))
+means=mean_+meandep*order
+medians=median_+mediandep*order
+meanavg=sum(means[465:500])/length(means[465:500])
+medianavg=sum(medians[465:500])/length(medians[465:500])
+list("true.mean"=meanavg, "estimated.mean"=mean(died_mean),"std.mean"=sd(died_mean),"naive.mean"=mean(born_mean),
+"true.median"=medianavg, "estimated.median"=mean(died_median),"std.median"=sd(born_median),"naive.median"=mean(born_median))
+```
+Scenario 4: Constant, then increasing life expectancy
+
+```{r KM scenario4,echo=FALSE}
+set.seed(1)
+N=500
+#every individual was born each year during the 500 years
+Year.of.birth<-seq(1,N,1)
+mean_=mean(survival$Age.at.death)
+median_=median(survival$Age.at.death)
+meandep=0.5
+mediandep=0.5
+died_mean=0
+died_median=0
+born_mean=0
+born_median=0
+#simulate that the life expectancy is increasing during the last 41 years(1990-2010)
+start=460
+end=500
+for (i in 1:1000){
+#simulate survival time during 500 years
+  Age.of.death<-weibull_eventtime_stop(mean_,median_,meandep,mediandep,N,start,end)
+  Year.of.death<-Year.of.birth+Age.of.death
+  df=data.frame(Year.of.birth,Year.of.death,Age.of.death)
+  #died since 465 and before the end of the study
+  df1=df%>%filter(Year.of.death>=465,Year.of.death<=500)
+  #born since 465
+  df2=df%>%filter(Year.of.birth>=465)
+  #died since Year 465 
+  died_mean[i]=mean(df1$Age.of.death)
+  died_median[i]=median(df1$Age.of.death)
+  #born since Year 465
+  born_mean[i]=mean(df2$Age.of.death)
+  born_median[i]=median(df2$Age.of.death)
+}
+order=c(rep(0,start),1:(end-start))
+means=mean_+meandep*order
+medians=median_+mediandep*order
+meanavg=sum(means[465:500])/length(means[465:500])
+medianavg=sum(medians[465:500])/length(medians[465:500])
+list("true.mean"=meanavg, "estimated.mean"=mean(died_mean),"std.mean"=sd(died_mean),"naive.mean"=mean(born_mean),
+"true.median"=medianavg, "estimated.median"=mean(died_median),"std.median"=sd(born_median),"naive.median"=mean(born_median))
+```
