@@ -4,15 +4,16 @@ Life expectancy is accurate when we assess the life length of a cohort of indivi
 ## Code directory 
 weibull_distribution.R: functions that used in the following Rmd files.
 
+reproducing_analysis.Rmd and .html:
 figure1_weibull_distribution_plot.Rmd and .html: Rmd file generates the density of a Weibull distribution with mean and median of age at death based on the data. html file is the output of Rmd file.
 
 figure2_real_means_medians.Rmd and .html: Rmd file displays the changes of real mean and median survival time for simulating in four different scenarios. html file is the output of the Rmd file.
 
-figure3_boxplots_of_four_scenarios.Rmd and .html: Rmd file has four boxplots showing the average mean and median survival time of individuals deceased during the last 36 years and comparing them with the true mean and median values.
+figure3_boxplots_of_four_scenarios.Rmd and .html: Rmd file has four boxplots showing the average mean and median survival time of individuals deceased during the last 36 years and comparing them with the true mean and median values. html file is the output of the Rmd file.
 
-Tabel1.rmd and .html: Rmd file displays the true mean and median survival, average estimated mean and median survival and naive mean and median survival across 1000 simulation runs, for each of the 4 scenarios. 
+Tabel1.rmd and .html: Rmd file displays the true mean and median survival, average estimated mean and median survival and naive mean and median survival across 1000 simulation runs, for each of the 4 scenarios. html file is the output of the Rmd file.
 
-Tabel2.rmd and.html: Rmd file displays the Kaplan Meier median survival time across 1000 simulation runs, for each of the 4 scenarios
+Tabel2.rmd and.html: Rmd file displays the Kaplan Meier median survival time across 1000 simulation runs, for each of the 4 scenarios. html file is the output of the Rmd file.
 
 ## Data directory
 M_Type_A_survival.csv: Deaths that occurred between 1975 and 2010 in the United Kingdom collected by the the Society for Mucopolysaccharide Disease in the United Kingdom. A total of 27 deaths were recorded, with the dataset being made fully available and including date of birth, gender, date of death, and primary cause of death.  
