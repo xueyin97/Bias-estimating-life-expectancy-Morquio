@@ -16,158 +16,256 @@ source("weibull_function.R")
 ```
 
 ```{r read data,include=FALSE}
-survival<-read.csv("../data/M_Type_A_survival.csv")
+survival <- read.csv("../data/M_Type_A_survival.csv")
 ```
 
 Scenario 1: Constant life expectancy
 
 ```{r scenario1 36yrs,echo=FALSE}
 set.seed(1)
-N=500
-#every individual was born each year during the 500 years
-Year.of.birth<-seq(1,N,1)
-mean.all<-0
-median.all<-0
-mean_=mean(survival$Age.at.death)
-median_=median(survival$Age.at.death)
-meandep=0
-mediandep=0
+## Define the number of years for simulation
+N <- 500
+## Every individual was born each year during the 500 years
+Year_of_birth <- seq(1, N, 1)
+## Get the mean and median from the dataset
+mean_orig <- mean(survival$Age.at.death)
+median_orig <- median(survival$Age.at.death)
+## Define the increasing rate of mean and median
+meandep <- 0
+mediandep <- 0
+mean_all <- vector()
+median_all <- vector()
 for (i in 1:1000){
-#simulate survival time during 500 years
-Age.of.death<-weibull_eventtime(mean_,median_,meandep,mediandep,N)
-Year.of.death<-Year.of.birth+Age.of.death
-survdata<-data.frame(Year.of.birth,Year.of.death,Age.of.death)
-#mean and median survival time of the individuals who died between the 466th year to the 500th year(36years)
-mean.all[i]=mean((survdata %>% filter(Year.of.death >= 465, Year.of.death <= 500))[,"Age.of.death"])
-median.all[i]=median((survdata %>% filter(Year.of.death >= 465, Year.of.death <= 500))[,"Age.of.death"])
+  ## Simulate survival time during 500 years
+  Age_of_death<-weibull_eventtime(mean_orig,median_orig,meandep,mediandep,N)
+  Year_of_death<-Year_of_birth+Age_of_death
+  survdata<-data.frame(Year_of_birth,Year_of_death,Age_of_death)
+  ## Mean and median survival time of the individuals who died between the 466th year to the 500th year(36years)
+  mean_all[i] <- mean((survdata %>% filter(Year_of_death >=465, Year_of_death <= 500))[,"Age_of_death"])
+  median_all[i] <- median((survdata %>% filter(Year_of_death >= 465, Year_of_death <= 500))[,"Age_of_death"])
 }
-#standard deviation
-sd(mean.all)
-sd(median.all)
-#boxplot of means and medians
-simulation_num<-1:1000
-meanmedian=data.frame(mean=mean.all,median=median.all,simulation_num)
-df<-melt(meanmedian,c("simulation_num"))
-true<-data.frame(variable=c("mean","median"),hline=c(mean_,median_))
-df %>% ggplot(aes(x=variable,y=value))+geom_boxplot() +geom_jitter(alpha=0.1,position = position_jitter(width = 0.3,seed=1))+stat_summary(fun.y = "mean", geom = "point", colour = "#000000", size = 2)+ stat_summary(fun.y="mean", colour="#000000", geom="text", vjust=-0.7,size=6, aes( label=round(..y.., digits=1)))+geom_errorbar(data=true,aes(y=NULL,ymax=hline,ymin=hline),linetype="dashed",color=c("#0072B2","#D55E00"),position=position_dodge())+geom_text(aes(1,mean_-0.6),label=round(mean_,digits=2),size=6,color=c("#0072B2"))+geom_text(aes(2,median_-0.7),label=round(median_,digits=2),size=6,color="#D55E00")+xlab("Statistics")+ylab("Mean or median survival")+theme_bw(base_size = 18,base_family = "")
+## Standard deviation
+sd(mean_all)
+sd(median_all)
+## Boxplot of means and medians
+simulation_num <- 1:1000
+meanmedian <- data.frame(mean=mean_all,median=median_all,
+                         simulation_num)
+df <- melt(meanmedian,c("simulation_num"))
+true <- data.frame(variable=c("mean","median"),
+                 hline=c(mean_orig,median_orig))
+df %>% ggplot(aes(x=variable,y=value))+
+  geom_boxplot()+
+  geom_jitter(alpha=0.1,position = position_jitter(width = 0.3,seed=1))+
+  stat_summary(fun.y = "mean", geom = "point", colour = "#000000",
+              size = 2)+
+  stat_summary(fun.y="mean", colour="#000000", geom="text",
+               vjust=-0.7,size=6, aes( label=round(..y.., digits=1)))+
+  geom_errorbar(data=true,aes(y=NULL,ymax=hline,ymin=hline),
+               linetype="dashed",color=c("#0072B2","#D55E00"),
+               position=position_dodge())+
+  geom_text(aes(1,mean_orig-0.6),label=round(mean_orig,digits=2),
+           size=6,color=c("#0072B2"))+
+  geom_text(aes(2,median_orig-0.7),label=round(median_orig,digits=2),
+           size=6,color="#D55E00")+xlab("Statistics")+
+  ylab("Mean or median survival")+
+  theme_bw(base_size = 18,base_family = "")
 ```
 
 Senario 2: Gradually increasing life expectancy
 
 ```{r scenario2 36yrs,echo=FALSE}
 set.seed(1)
-N=500
-#every individual was born each year during the 500 years
-Year.of.birth<-seq(1,N,1)
-mean.all<-0
-median.all<-0
-mean_=mean(survival$Age.at.death)
-median_=median(survival$Age.at.death)
-meandep=0.05
-mediandep=0.05
+## Define the number of years for simulation
+N <- 500
+## Every individual was born each year during the 500 years
+Year_of_birth <- seq(1, N, 1)
+## Get the mean and median from the dataset
+mean_orig <- mean(survival$Age.at.death)
+median_orig <- median(survival$Age.at.death)
+## Define the increasing rate of mean and median
+meandep <- 0.05
+mediandep <- 0.05
+mean_all <- vector()
+median_all <- vector()
 for (i in 1:1000){
-#simulate survival time during 500 years
-Age.of.death<-weibull_eventtime(mean_,median_,meandep,mediandep,N)
-Year.of.death<-Year.of.birth+Age.of.death
-survdata<-data.frame(Year.of.birth,Year.of.death,Age.of.death)
-#mean and median survival time of the individuals who died between the 466th year to the 500th year(36years)
-mean.all[i]=mean((survdata %>% filter(Year.of.death >= 465, Year.of.death <= 500))[,"Age.of.death"])
-median.all[i]=median((survdata %>% filter(Year.of.death >= 465, Year.of.death <= 500))[,"Age.of.death"])
+  ##Simulate survival time during 500 years
+  Age_of_death <- weibull_eventtime(mean_orig, median_orig, 
+                                    meandep, mediandep, N)
+  Year_of_death <- Year_of_birth+Age_of_death
+  survdata<-data.frame(Year_of_birth,Year_of_death,Age_of_death)
+  ## Mean and median survival time of the individuals who died between  the 466th year to the 500th year(36years)
+  mean_all[i] <- mean((survdata %>% filter(Year_of_death >=465, Year_of_death <= 500))[,"Age_of_death"])
+  median_all[i] <- median((survdata %>% filter(Year_of_death >= 465, Year_of_death <= 500))[,"Age_of_death"])
 }
 #standard deviation
-sd(mean.all)
-sd(median.all)
-#boxplot of means and medians
-order=0:499
-means=mean_+meandep*order
-medians=median_+mediandep*order
-meanavg=sum(means[465:500])/length(means[465:500])
-medianavg=sum(medians[465:500])/length(medians[465:500])
-simulation_num<-1:1000
-meanmedian=data.frame(mean=mean.all,median=median.all,simulation_num)
-df<-melt(meanmedian,c("simulation_num"))
-true<-data.frame(variable=c("mean","median"),hline=c(meanavg,medianavg))
-df %>% ggplot(aes(x=variable,y=value))+geom_boxplot() +geom_jitter(alpha=0.1,position = position_jitter(width = 0.3,seed=1))+stat_summary(fun.y = "mean", geom = "point", colour = "#000000", size = 2)+ stat_summary(fun.y="mean", colour="#000000", geom="text", vjust=-0.7,size=6, aes( label=round(..y.., digits=1)))+geom_errorbar(data=true,aes(y=NULL,ymax=hline,ymin=hline),linetype="dashed",color=c("#0072B2","#D55E00"),position=position_dodge())+geom_text(aes(1,meanavg),label=round(meanavg,digits=2),size=6,color="#0072B2")+geom_text(aes(2,medianavg+0.5),label=round(medianavg,digits=2),size=6,color="#D55E00")+xlab("Statistics")+ylab("Mean or median survival")+theme_bw(base_size = 18,base_family = "")
+sd(mean_all)
+sd(median_all)
+## Calculate the actual mean and median for each year
+order <- 0:499
+means <- mean_orig+meandep*order
+medians <- median_orig+mediandep*order
+## Get the average mean and median survival since 465
+meanavg <- sum(means[465:500])/length(means[465:500])
+medianavg <- sum(medians[465:500])/length(medians[465:500])
+simulation_num <- 1:1000
+meanmedian <- data.frame(mean=mean_all,median=median_all,
+                         simulation_num)
+df <- melt(meanmedian,c("simulation_num"))
+true <- data.frame(variable=c("mean","median"),
+                   hline=c(meanavg,medianavg))
+## Boxplot of means and medians
+df %>% ggplot(aes(x=variable,y=value))+
+  geom_boxplot()+
+  geom_jitter(alpha=0.1,position = position_jitter(width = 0.3,seed=1))+
+  stat_summary(fun.y = "mean", geom = "point", colour = "#000000", 
+              size = 2)+
+  stat_summary(fun.y="mean", colour="#000000", geom="text", 
+              vjust=-0.7,size=6, aes( label=round(..y.., digits=1)))+
+  geom_errorbar(data=true,aes(y=NULL,ymax=hline,ymin=hline),
+               linetype="dashed",color=c("#0072B2","#D55E00"),
+               position=position_dodge())+
+  geom_text(aes(1,meanavg),label=round(meanavg,digits=2),size=6,
+           color="#0072B2")+
+  geom_text(aes(2,medianavg+0.5),label=round(medianavg,digits=2),
+           size=6,color="#D55E00")+
+  xlab("Statistics")+
+  ylab("Mean or median survival")+
+  theme_bw(base_size = 18,base_family = "")
 ```
 
 Scenario 3: Gradually increasing life expectancy that later stabilizes
 
 ```{r scenario3 36yrs,echo=FALSE}
 set.seed(1)
-N=500
-#every individual was born each year during the 500 years
-Year.of.birth<-seq(1,N,1)
-mean.all<-0
-median.all<-0
-mean_=mean(survival$Age.at.death)
-median_=median(survival$Age.at.death)
-meandep=0.05
-mediandep=0.05
-#life expectancy stop rising at the 460th year
-start=1
-end=460
+## Define the number of years for simulation
+N <- 500
+## Every individual was born each year during the 500 years
+Year_of_birth <- seq(1, N, 1)
+## Get the mean and median from the dataset
+mean_orig <- mean(survival$Age.at.death)
+median_orig <- median(survival$Age.at.death)
+## Define the increasing rate of mean and median
+meandep <- 0.05
+mediandep <- 0.05
+mean_all <- vector()
+median_all <- vector()
+## Life expectancy rising for the first 460 years and then stabilize
+start <- 1
+end <- 460
 for (i in 1:1000){
-#simulate survival time during 500 years
-Age.of.death<-weibull_eventtime_stop(mean_,median_,meandep,mediandep,N,start,end)
-Year.of.death<-Year.of.birth+Age.of.death
-survdata<-data.frame(Year.of.birth,Year.of.death,Age.of.death)
-#mean and median survival time of the individuals who died between the 466th year to the 500th year(36years)
-mean.all[i]=mean((survdata %>% filter(Year.of.death >= 465, Year.of.death <= 500))[,"Age.of.death"])
-median.all[i]=median((survdata %>% filter(Year.of.death >= 465, Year.of.death <= 500))[,"Age.of.death"])
+  ## Simulate survival time during 500 years
+  Age_of_death <- weibull_eventtime_stop(mean_orig, median_orig,
+                                       meandep, mediandep, N, 
+                                       start, end)
+  Year_of_death <- Year_of_birth+Age_of_death
+  survdata<-data.frame(Year_of_birth,Year_of_death,Age_of_death)
+  ##mean and median survival time of the individuals who died between the 466th year to the 500th year(36years)
+  mean_all[i] <- mean((survdata %>% filter(Year_of_death >=465, Year_of_death <= 500))[,"Age_of_death"])
+  median_all[i] <- median((survdata %>% filter(Year_of_death >= 465, Year_of_death <= 500))[,"Age_of_death"])
 }
-#standard deviation
-sd(mean.all)
-sd(median.all)
-#boxplot of means and medians
-order=c(0:(end-1),rep(end-1,500-end))
-means=mean_+meandep*order
-medians=median_+mediandep*order
-meanavg=sum(means[465:500])/length(means[465:500])
-medianavg=sum(medians[465:500])/length(medians[465:500])
+## Standard deviation
+sd(mean_all)
+sd(median_all)
+## Calculate the actual mean and median for each year
+order <- c(0:(end-1),rep(end-1,500-end))
+means <- mean_orig+meandep*order
+medians <- median_orig+mediandep*order
+## Get the average mean and median survival since 465
+meanavg <- sum(means[465:500])/length(means[465:500])
+medianavg <- sum(medians[465:500])/length(medians[465:500])
 simulation_num<-1:1000
-meanmedian=data.frame(mean=mean.all,median=median.all,simulation_num)
-df<-melt(meanmedian,c("simulation_num"))
-true<-data.frame(variable=c("mean","median"),hline=c(meanavg,medianavg))
-df %>% ggplot(aes(x=variable,y=value))+geom_boxplot() +geom_jitter(alpha=0.1,position = position_jitter(width = 0.3,seed=1))+xlab("mean")+ylab("Mean or median survival")+stat_summary(fun.y = "mean", geom = "point", colour = "#000000", size = 2)+ stat_summary(fun.y="mean", colour="#000000", geom="text", vjust=-0.7,size=6, aes( label=round(..y.., digits=1)))+geom_errorbar(data=true,aes(y=NULL,ymax=hline,ymin=hline),linetype="dashed",color=c("#0072B2","#D55E00"),position=position_dodge())+geom_text(aes(1,meanavg+1.5),label=round(meanavg,digits=2),size=6,color="#0072B2")+geom_text(aes(2,medianavg+2),label=round(medianavg,digits=2),size=6,color="#D55E00")+xlab("Statistics")+ylab("Mean or median survival")+theme_bw(base_size = 18,base_family = "")
+meanmedian <- data.frame(mean=mean_all,median=median_all,
+                         simulation_num)
+df <- melt(meanmedian,c("simulation_num"))
+true <- data.frame(variable=c("mean","median"),
+                 hline=c(meanavg,medianavg))
+## Boxplot of means and medians
+df %>% ggplot(aes(x=variable,y=value))+
+  geom_boxplot()+
+  geom_jitter(alpha=0.1,position = position_jitter(width = 0.3,seed=1))+
+  stat_summary(fun.y = "mean", geom = "point", colour = "#000000", 
+              size = 2)+
+  stat_summary(fun.y="mean", colour="#000000", 
+                                      geom="text", vjust=-0.7,size=6, 
+                                      aes( label=round(..y..,
+                                                       digits=1)))+
+  geom_errorbar(data=true,aes(y=NULL,ymax=hline,ymin=hline),
+               linetype="dashed",color=c("#0072B2","#D55E00"),
+               position=position_dodge())+
+  geom_text(aes(1,meanavg+1.5),label=round(meanavg,digits=2),size=6,
+           color="#0072B2")+
+  geom_text(aes(2,medianavg+2),label=round(medianavg,digits=2),size=6,
+           color="#D55E00")+
+  xlab("Statistics")+
+  ylab("Mean or median survival")+
+  theme_bw(base_size = 18,base_family = "")
 ```
 
 Scenario 4: Constant, then increasing life expectancy
 
 ```{r scenario4 36yrs,echo=FALSE}
 set.seed(1)
-N=500
-#every individual was born each year during the 500 years
-Year.of.birth<-seq(1,N,1)
-mean.all<-0
-median.all<-0
-mean_=mean(survival$Age.at.death)
-median_=median(survival$Age.at.death)
-meandep=0.5
-mediandep=0.5
-#simulate that the life expectancy is increasing during the last 21 years(1990-2010)
-start=460
-end=500
+## Define the number of years for simulation
+N <- 500
+## Every individual was born each year during the 500 years
+Year_of_birth <- seq(1, N, 1)
+## Get the mean and median from the dataset
+mean_orig <- mean(survival$Age.at.death)
+median_orig <- median(survival$Age.at.death)
+## Define the increasing rate of mean and median
+meandep <- 0.5
+mediandep <- 0.5
+mean_all <- vector()
+median_all <- vector()
+## Life expectancy firstly stabilize and then increase since 460
+start <- 460
+end <- 500
 for (i in 1:1000){
-#simulate survival time during 500 years
-Age.of.death<-weibull_eventtime_stop(mean_,median_,meandep,mediandep,N,start,end)
-Year.of.death<-Year.of.birth+Age.of.death
-survdata<-data.frame(Year.of.birth,Year.of.death,Age.of.death)
-#mean and median survival time of the individuals who died between the 465th year to the 500th year(36years)
-mean.all[i]=mean((survdata %>% filter(Year.of.death >= 465, Year.of.death <= 500))[,"Age.of.death"])
-median.all[i]=median((survdata %>% filter(Year.of.death >= 465, Year.of.death <= 500))[,"Age.of.death"])
+  ## Simulate survival time during 500 years
+  Age_of_death <- weibull_eventtime_stop(mean_orig, median_orig, 
+                                       meandep,mediandep,N,
+                                       start,end)
+  Year_of_death <- Year_of_birth+Age_of_death
+  survdata<-data.frame(Year_of_birth,Year_of_death,Age_of_death)
+  ##mean and median survival time of the individuals who died between the 465th year to the 500th year(36years)
+  mean_all[i] <- mean((survdata %>% filter(Year_of_death >=465, Year_of_death <= 500))[,"Age_of_death"])
+  median_all[i] <- median((survdata %>% filter(Year_of_death >= 465, Year_of_death <= 500))[,"Age_of_death"])
 }
-#standard deviation
-sd(mean.all)
-sd(median.all)
-#boxplot of means and medians
-order=c(rep(0,start),1:(end-start))
-means=mean_+meandep*order
-medians=median_+mediandep*order
-meanavg=sum(means[465:500])/length(means[465:500])
-medianavg=sum(medians[465:500])/length(medians[465:500])
+## Standard deviation
+sd(mean_all)
+sd(median_all)
+## Calculate the actual mean and median for each year
+order <- c(rep(0,start),1:(end-start))
+means <- mean_orig+meandep*order
+medians <- median_orig+mediandep*order
+## Get the average mean and median survival since 465
+meanavg <- sum(means[465:500])/length(means[465:500])
+medianavg <- sum(medians[465:500])/length(medians[465:500])
 simulation_num<-1:1000
-meanmedian=data.frame(mean=mean.all,median=median.all,simulation_num)
-df<-melt(meanmedian,c("simulation_num"))
-true<-data.frame(variable=c("mean","median"),hline=c(meanavg,medianavg))
-df %>% ggplot(aes(x=variable,y=value))+geom_boxplot() +geom_jitter(alpha=0.1,position = position_jitter(width = 0.3,seed=1))+xlab("mean")+ylab("Mean or median survival")+stat_summary(fun.y = "mean", geom = "point", colour = "#000000", size = 2)+ stat_summary(fun.y="mean", colour="#000000", geom="text", vjust=-0.7,size=6, aes( label=round(..y.., digits=1)))+geom_errorbar(data=true,aes(y=NULL,ymax=hline,ymin=hline),linetype="dashed",color=c("#0072B2","#D55E00"),position=position_dodge())+geom_text(aes(1,meanavg),label=round(meanavg,digits=2),size=6,color="#0072B2")+geom_text(aes(2,medianavg),label=round(medianavg,digits=2),size=6,color="#D55E00")+xlab("Statistics")+ylab("Mean or median survival")+theme_bw(base_size = 18,base_family = "")
+meanmedian <- data.frame(mean=mean_all,median=median_all,
+                         simulation_num)
+df <- melt(meanmedian,c("simulation_num"))
+true <- data.frame(variable=c("mean","median"),
+                   hline=c(meanavg,medianavg))
+## Boxplot of means and medians
+df %>% ggplot(aes(x=variable,y=value))+
+  geom_boxplot()+
+  geom_jitter(alpha=0.1,position = position_jitter(width = 0.3,seed=1))+
+  stat_summary(fun.y = "mean", geom = "point", colour = "#000000", 
+              size = 2)+
+  stat_summary(fun.y="mean", colour="#000000", 
+                                      geom="text", vjust=-0.7,size=6, 
+                                      aes(label=round(..y..,
+                                                      digits=1)))+
+  geom_errorbar(data=true,aes(y=NULL,ymax=hline,ymin=hline),
+               linetype="dashed",color=c("#0072B2","#D55E00"),
+               position=position_dodge())+
+  geom_text(aes(1,meanavg),label=round(meanavg,digits=2),size=6,
+           color="#0072B2")+geom_text(aes(2,medianavg),
+                                      label=round(medianavg,digits=2),
+                                      size=6,color="#D55E00")+
+  xlab("Statistics")+
+  ylab("Mean or median survival")+
+  theme_bw(base_size = 18,base_family = "")
 ```
