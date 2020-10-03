@@ -17,212 +17,383 @@ source("weibull_function.R")
 ```
 
 ```{r read data,include=FALSE}
-survival<-read.csv("../data/M_Type_A_survival.csv")
+survival <- read.csv("../data/M_Type_A_survival.csv")
 ```
 
 Scenario 1: Constant life expectancy
 
 ```{r KM scenario1, echo=FALSE}
 set.seed(1)
-N=500
-#every individual was born each year during the 500 years
-Year.of.birth<-seq(1,N,1)
-mean_=mean(survival$Age.at.death)
-median_=median(survival$Age.at.death)
-meandep=0
-mediandep=0
-died=0
-died_alive=0
-adj1=0
-adj2=0
-born=0
-uncensor=0
-df<-data.frame(matrix(ncol=5,nrow=0, dimnames=list(NULL, c("Year.of.birth","Year.of.death","Age.of.death","time","status"))))
+N <- 500
+## Every individual was born each year during the 500 years
+Year_of_birth <- seq(1, N, 1)
+## Get the mean and median from the dataset
+mean_orig <- mean(survival$Age.at.death)
+median_orig <- median(survival$Age.at.death)
+## Define the increasing rate of mean and median
+meandep <- 0
+mediandep <- 0
+died <- vector()
+died_alive <- vector()
+adj1 <- vector()
+adj2 <- vector()
+born <- vector()
+## Number of deaths since 465
+NumDeaths_died465 <- vector()
+## Number of deaths in 465 to 500
+NumDeaths_died465to500 <- vector()
+## Number of individuals born since 465
+Num_born465 <- vector()
+## Number of deaths in 465 to 500 among individuals born since 465
+NumDeaths_born465 <- vector()
+df <- data.frame(matrix(ncol=5,nrow=0, dimnames=list(NULL,
+                                      c("Year_of_birth",
+                                        "Year_of_death",
+                                        "Age_of_death",
+                                        "time","status"))))
 for (i in 1:1000){
-  #simulate survival time during 500 years
-  Age.of.death<-weibull_eventtime(mean_,median_,meandep,mediandep,N)
-  Year.of.death<-Year.of.birth+Age.of.death
-  time=ifelse(Year.of.death>500,500-Year.of.birth,Age.of.death)
-  status=ifelse(Year.of.death>500,0,1)
-  df=data.frame(Year.of.birth,Year.of.death,Age.of.death,time,status)
-  #died since 465
-  df1=df%>%filter(Year.of.death>=465)
-  #born since 465
-  df2=df%>%filter(Year.of.birth>=465)
-  #KM medians  died since Year 465 
-  died.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1[df1$status==1,])
-  died[i]=unname(summary(died.fit)$table['median'])
-  #KM medians died since Year 465 plus alive(censored)
-  died_alive.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1)
-  died_alive[i]=unname(summary(died_alive.fit)$table['median'])
-  #adjusted KM died since 465 plus alive(censored) weights=0.1
-  df1=df1%>%mutate(weight=ifelse(Year.of.death>500,0.1,1)) 
-  adj1.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1,weights=weight)
-  adj1[i]=unname(summary(adj1.fit)$table['median'])
-  #adjusted KM died since 465 plus alive(censored) weights=uncensored fraction 
-  df1=df1%>%mutate(weight=ifelse(Year.of.death>500,sum(df1$status==1)/length(df1$status),1)) 
-  adj2.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1,weights=weight)
-  adj2[i]=unname(summary(adj2.fit)$table['median'])
-  #KM medians born since 465(censored)
-  born.fit=survfit(Surv(Age.of.death,status)~1,type='kaplan-meier',conf.type='log',data=df2)
-  born[i]=unname(summary(born.fit)$table['median'])
+  ## Simulate survival time during 500 years
+  Age_of_death <- weibull_eventtime(mean_orig, median_orig, meandep,
+                                    mediandep, N)
+  Year_of_death <- Year_of_birth+Age_of_death
+  ## Get the age at 500 of individuals who live after 500 (censored)
+  time <- ifelse(Year_of_death>500, 500-Year_of_birth, Age_of_death)
+  ## Determine status of individuals who live after 500 as censored(0)
+  status <- ifelse(Year_of_death>500, 0, 1)
+  df <- data.frame(Year_of_birth, Year_of_death, Age_of_death, 
+                   time, status)
+  ## Died since 465
+  df1 <- df %>% filter(Year_of_death>=465)
+  NumDeaths_died465[i] <- dim(df1)[1]
+  ## Died between 465 and 500
+  df2 <- df1 %>% filter(Year_of_death<=500)
+  NumDeaths_died465to500[i] <- dim(df2)[1]
+  ## Born since 465
+  df3 <- df %>% filter(Year_of_birth>=465)
+  Num_born465[i] <- dim(df3)[1]
+  ## Born since 465 and die before 500
+  df4 <- df3 %>% filter(Year_of_death<=500)
+  NumDeaths_born465[i] <- dim(df4)[1]
+  ## KM medians on died since Year 465(no censoring)
+  died_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                   conf.type='log', data=df1[df1$status==1,])
+  died[i] <- unname(summary(died_fit)$table['median'])
+  ## KM medians on died since Year 465 plus alive(censored)
+  died_alive_fit <- survfit(Surv(time,status)~1,
+                        type='kaplan-meier',
+                        conf.type='log',data=df1)
+  died_alive[i] <- unname(summary(died_alive_fit)$table['median'])
+  ## Adjusted KM died since 465 plus alive(censored) weights=0.1
+  df1 <- df1 %>% mutate(weight=ifelse(Year_of_death>500,0.1,1)) 
+  adj1_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                      conf.type='log', data=df1, weights=weight)
+  adj1[i] <- unname(summary(adj1_fit)$table['median'])
+  ## Adjusted KM died since 465 plus alive(censored), weights=uncensored fraction 
+  df1 <- df1 %>% mutate(weight=ifelse(Year_of_death>500,
+                                    sum(df1$status==1)/
+                                    length(df1$status),1)) 
+  adj2_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                      conf.type='log', data=df1, weights=weight)
+  adj2[i] <- unname(summary(adj2_fit)$table['median'])
+  ## KM medians born since 465(censored)
+  born_fit <- survfit(Surv(Age_of_death,status)~1,type='kaplan-meier',
+                      conf.type='log',data=df3)
+  born[i] <- unname(summary(born_fit)$table['median'])
 } 
-list("died.since.465"=mean(na.omit(died)),"died.since.465.plus.alive.at.500(censored)"=mean(na.omit(died_alive)),
-"weighted.by.0.1"=mean(na.omit(adj1)),"weighted.by.uncensored.fraction"=mean(na.omit(adj2)),"born.since.465"=mean(na.omit(born)))
+list("avg.num.deaths.465to500"=mean(NumDeaths_died465to500),
+     "avg.num.died.since465"=mean(NumDeaths_died465),
+     "avg.num.deaths.born465"=mean(NumDeaths_born465),
+     "avg.num.born.since465"=mean(Num_born465),
+     "died.since465"=mean(na.omit(died)),
+     "died.since465.plus.alive.at500(censored)"
+     =mean(na.omit(died_alive)),
+     "weighted.by.0.1"=mean(na.omit(adj1)),
+     "weighted.by.uncensored.fraction"=mean(na.omit(adj2)),
+     "born.since465"=mean(na.omit(born)))
 ```
 
 Scenario 2: Gradually increasing life expectancy
 
 ```{r KM scenario2,echo=FALSE}
 set.seed(1)
-N=500
-#every individual was born each year during the 500 years
-Year.of.birth<-seq(1,N,1)
-mean_=mean(survival$Age.at.death)
-median_=median(survival$Age.at.death)
-meandep=0.05
-mediandep=0.05
-died=0
-died_alive=0
-adj1=0
-adj2=0
-born=0
-uncensor=0
+## Define the number of years for simulation
+N <- 500
+## Every individual was born each year during the 500 years
+Year_of_birth <- seq(1, N, 1)
+## Get the mean and median from the dataset
+mean_orig <- mean(survival$Age.at.death)
+median_orig <- median(survival$Age.at.death)
+## Define the increasing rate of mean and median
+meandep <- 0.05
+mediandep <- 0.05
+died <- vector()
+died_alive <- vector()
+adj1 <- vector()
+adj2 <- vector()
+born <- vector()
+## Number of deaths since 465
+NumDeaths_died465 <- vector()
+## Number of deaths in 465 to 500
+NumDeaths_died465to500 <- vector()
+## Number of individuals born since 465
+Num_born465 <- vector()
+## Number of deaths in 465 to 500 among individuals born since 465
+NumDeaths_born465 <- vector()
+df <- data.frame(matrix(ncol=5,nrow=0, dimnames=list(NULL,
+                                      c("Year_of_birth",
+                                        "Year_of_death",
+                                        "Age_of_death",
+                                        "time","status"))))
 for (i in 1:1000){
-#simulate survival time during 500 years
-Age.of.death<-weibull_eventtime(mean_,median_,meandep,mediandep,N)
-Year.of.death<-Year.of.birth+Age.of.death
-     time=ifelse(Year.of.death>500,500-Year.of.birth,Age.of.death)
-  status=ifelse(Year.of.death>500,0,1)
-  df=data.frame(Year.of.birth,Year.of.death,Age.of.death,time,status)
-  #died since 465
-  df1=df%>%filter(Year.of.death>=465)
-  #born since 465
-  df2=df%>%filter(Year.of.birth>=465)
-  #KM medians  died since Year 465 
-  died.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1[df1$status==1,])
-  died[i]=unname(summary(died.fit)$table['median'])
-  #KM medians died since Year 465 plus alive(censored)
-  died_alive.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1)
-  died_alive[i]=unname(summary(died_alive.fit)$table['median'])
-  #adjusted KM died since 465 plus alive(censored) weights=0.1
-  df1=df1%>%mutate(weight=ifelse(Year.of.death>500,0.1,1)) 
-  adj1.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1,weights=weight)
-  adj1[i]=unname(summary(adj1.fit)$table['median'])
-  #adjusted KM died since 465 plus alive(censored) weights=uncensored fraction 
-  df1=df1%>%mutate(weight=ifelse(Year.of.death>500,sum(df1$status==1)/length(df1$status),1)) 
-  adj2.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1,weights=weight)
-  adj2[i]=unname(summary(adj2.fit)$table['median'])
-  #KM medians born since 465(censored)
-  born.fit=survfit(Surv(Age.of.death,status)~1,type='kaplan-meier',conf.type='log',data=df2)
-  born[i]=unname(summary(born.fit)$table['median'])
+  ##Simulate survival time during 500 years
+  Age_of_death <- weibull_eventtime(mean_orig, median_orig, 
+                                    meandep, mediandep, N)
+  Year_of_death <- Year_of_birth+Age_of_death
+  ## Get the age at 500 of individuals who live after 500 (censored)
+  time <- ifelse(Year_of_death>500, 500-Year_of_birth, Age_of_death)
+  ## Determine status of individuals who live after 500 as censored(0)
+  status <- ifelse(Year_of_death>500, 0, 1)
+  df <- data.frame(Year_of_birth, Year_of_death, Age_of_death, 
+                   time, status)
+  ## Died since 465
+  df1 <- df %>% filter(Year_of_death>=465)
+  NumDeaths_died465[i] <- dim(df1)[1]
+  ## Died between 465 and 500
+  df2 <- df1 %>% filter(Year_of_death<=500)
+  NumDeaths_died465to500[i] <- dim(df2)[1]
+  ## Born since 465
+  df3 <- df %>% filter(Year_of_birth>=465)
+  Num_born465[i] <- dim(df3)[1]
+  ## Born since 465 and die before 500
+  df4 <- df3 %>% filter(Year_of_death<=500)
+  NumDeaths_born465[i] <- dim(df4)[1]
+  ## KM medians on died since Year 465(no censoring)
+  died_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                   conf.type='log', data=df1[df1$status==1,])
+  died[i] <- unname(summary(died_fit)$table['median'])
+  ## KM medians on died since Year 465 plus alive(censored)
+  died_alive_fit <- survfit(Surv(time,status)~1,
+                        type='kaplan-meier',
+                        conf.type='log',data=df1)
+  died_alive[i] <- unname(summary(died_alive_fit)$table['median'])
+  ## Adjusted KM died since 465 plus alive(censored) weights=0.1
+  df1 <- df1 %>% mutate(weight=ifelse(Year_of_death>500,0.1,1)) 
+  adj1_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                      conf.type='log', data=df1, weights=weight)
+  adj1[i] <- unname(summary(adj1_fit)$table['median'])
+  ## Adjusted KM died since 465 plus alive(censored), weights=uncensored fraction 
+  df1 <- df1 %>% mutate(weight=ifelse(Year_of_death>500,
+                                    sum(df1$status==1)/
+                                    length(df1$status),1)) 
+  adj2_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                      conf.type='log', data=df1, weights=weight)
+  adj2[i] <- unname(summary(adj2_fit)$table['median'])
+  ## KM medians born since 465(censored)
+  born_fit <- survfit(Surv(Age_of_death,status)~1,type='kaplan-meier',
+                      conf.type='log',data=df3)
+  born[i] <- unname(summary(born_fit)$table['median'])
 } 
-list("died.since.465"=mean(na.omit(died)),"died.since.465.plus.alive.at.500(censored)"=mean(na.omit(died_alive)),
-"weighted.by.0.1"=mean(na.omit(adj1)),"weighted.by.uncensored.fraction"=mean(na.omit(adj2)),"born.since.465"=mean(na.omit(born)))
+list("avg.num.deaths.465to500"=mean(NumDeaths_died465to500),
+     "avg.num.died.since465"=mean(NumDeaths_died465),
+     "avg.num.deaths.born465"=mean(NumDeaths_born465),
+     "avg.num.born.since465"=mean(Num_born465),
+     "died.since465"=mean(na.omit(died)),
+     "died.since465.plus.alive.at500(censored)"
+     =mean(na.omit(died_alive)),
+     "weighted.by.0.1"=mean(na.omit(adj1)),
+     "weighted.by.uncensored.fraction"=mean(na.omit(adj2)),
+     "born.since465"=mean(na.omit(born)))
 ```
 
 Scenario 3: Gradually increasing life expectancy that later stabilizes
 
 ```{r KM scenario3,echo=FALSE}
 set.seed(1)
-N=500
-#every individual was born each year during the 500 years
-Year.of.birth<-seq(1,N,1)
-mean_=mean(survival$Age.at.death)
-median_=median(survival$Age.at.death)
-meandep=0.05
-mediandep=0.05
-died=0
-died_alive=0
-adj1=0
-adj2=0
-born=0
-uncensor=0
-#life expectancy stop rising at the 460th year
-start=1
-end=460
+## Define the number of years for simulation
+N <- 500
+## Every individual was born each year during the 500 years
+Year_of_birth <- seq(1, N, 1)
+## Get the mean and median from the dataset
+mean_orig <- mean(survival$Age.at.death)
+median_orig <- median(survival$Age.at.death)
+## Define the increasing rate of mean and median
+meandep <- 0.05
+mediandep <- 0.05
+died <- vector()
+died_alive <- vector()
+adj1 <- vector()
+adj2 <- vector()
+born <- vector()
+## Number of deaths since 465
+NumDeaths_died465 <- vector()
+## Number of deaths in 465 to 500
+NumDeaths_died465to500 <- vector()
+## Number of individuals born since 465
+Num_born465 <- vector()
+## Number of deaths in 465 to 500 among individuals born since 465
+NumDeaths_born465 <- vector()
+df <- data.frame(matrix(ncol=5,nrow=0, dimnames=list(NULL,
+                                      c("Year_of_birth",
+                                        "Year_of_death",
+                                        "Age_of_death",
+                                        "time","status"))))
+## Life expectancy rising for the first 460 years and then stabilize
+start <- 1
+end <- 460
 for (i in 1:1000){
-#simulate survival time during 500 years
-Age.of.death<-weibull_eventtime_stop(mean_,median_,meandep,mediandep,N,start,end)
-Year.of.death<-Year.of.birth+Age.of.death
-    time=ifelse(Year.of.death>500,500-Year.of.birth,Age.of.death)
-  status=ifelse(Year.of.death>500,0,1)
-  df=data.frame(Year.of.birth,Year.of.death,Age.of.death,time,status)
-#died since 465
-  df1=df%>%filter(Year.of.death>=465)
-  #born since 465
-  df2=df%>%filter(Year.of.birth>=465)
-  #KM medians  died since Year 465 
-  died.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1[df1$status==1,])
-  died[i]=unname(summary(died.fit)$table['median'])
-  #KM medians died since Year 465 plus alive(censored)
-  died_alive.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1)
-  died_alive[i]=unname(summary(died_alive.fit)$table['median'])
-  #adjusted KM died since 465 plus alive(censored) weights=0.1
-  df1=df1%>%mutate(weight=ifelse(Year.of.death>500,0.1,1)) 
-  adj1.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1,weights=weight)
-  adj1[i]=unname(summary(adj1.fit)$table['median'])
-  #adjusted KM died since 465 plus alive(censored) weights=uncensored fraction 
-  df1=df1%>%mutate(weight=ifelse(Year.of.death>500,sum(df1$status==1)/length(df1$status),1)) 
-  adj2.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1,weights=weight)
-  adj2[i]=unname(summary(adj2.fit)$table['median'])
-  #KM medians born since 465(censored)
-  born.fit=survfit(Surv(Age.of.death,status)~1,type='kaplan-meier',conf.type='log',data=df2)
-  born[i]=unname(summary(born.fit)$table['median'])
+  ##Simulate survival time during 500 years
+  Age_of_death <- weibull_eventtime(mean_orig, median_orig, 
+                                    meandep, mediandep, N)
+  Year_of_death <- Year_of_birth+Age_of_death
+  ## Get the age at 500 of individuals who live after 500 (censored)
+  time <- ifelse(Year_of_death>500, 500-Year_of_birth, Age_of_death)
+  ## Determine status of individuals who live after 500 as censored(0)
+  status <- ifelse(Year_of_death>500, 0, 1)
+  df <- data.frame(Year_of_birth, Year_of_death, Age_of_death, 
+                   time, status)
+  ## Died since 465
+  df1 <- df %>% filter(Year_of_death>=465)
+  NumDeaths_died465[i] <- dim(df1)[1]
+  ## Died between 465 and 500
+  df2 <- df1 %>% filter(Year_of_death<=500)
+  NumDeaths_died465to500[i] <- dim(df2)[1]
+  ## Born since 465
+  df3 <- df %>% filter(Year_of_birth>=465)
+  Num_born465[i] <- dim(df3)[1]
+  ## Born since 465 and die before 500
+  df4 <- df3 %>% filter(Year_of_death<=500)
+  NumDeaths_born465[i] <- dim(df4)[1]
+  ## KM medians on died since Year 465(no censoring)
+  died_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                   conf.type='log', data=df1[df1$status==1,])
+  died[i] <- unname(summary(died_fit)$table['median'])
+  ## KM medians on died since Year 465 plus alive(censored)
+  died_alive_fit <- survfit(Surv(time,status)~1,
+                        type='kaplan-meier',
+                        conf.type='log',data=df1)
+  died_alive[i] <- unname(summary(died_alive_fit)$table['median'])
+  ## Adjusted KM died since 465 plus alive(censored) weights=0.1
+  df1 <- df1 %>% mutate(weight=ifelse(Year_of_death>500,0.1,1)) 
+  adj1_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                      conf.type='log', data=df1, weights=weight)
+  adj1[i] <- unname(summary(adj1_fit)$table['median'])
+  ## Adjusted KM died since 465 plus alive(censored), weights=uncensored fraction 
+  df1 <- df1 %>% mutate(weight=ifelse(Year_of_death>500,
+                                    sum(df1$status==1)/
+                                    length(df1$status),1)) 
+  adj2_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                      conf.type='log', data=df1, weights=weight)
+  adj2[i] <- unname(summary(adj2_fit)$table['median'])
+  ## KM medians born since 465(censored)
+  born_fit <- survfit(Surv(Age_of_death,status)~1,type='kaplan-meier',
+                      conf.type='log',data=df3)
+  born[i] <- unname(summary(born_fit)$table['median'])
 } 
-list("died.since.465"=mean(na.omit(died)),"died.since.465.plus.alive.at.500(censored)"=mean(na.omit(died_alive)),
-"weighted.by.0.1"=mean(na.omit(adj1)),"weighted.by.uncensored.fraction"=mean(na.omit(adj2)),"born.since.465"=mean(na.omit(born)))
+list("avg.num.deaths.465to500"=mean(NumDeaths_died465to500),
+     "avg.num.died.since465"=mean(NumDeaths_died465),
+     "avg.num.deaths.born465"=mean(NumDeaths_born465),
+     "avg.num.born.since465"=mean(Num_born465),
+     "died.since465"=mean(na.omit(died)),
+     "died.since465.plus.alive.at500(censored)"
+     =mean(na.omit(died_alive)),
+     "weighted.by.0.1"=mean(na.omit(adj1)),
+     "weighted.by.uncensored.fraction"=mean(na.omit(adj2)),
+     "born.since465"=mean(na.omit(born)))
 ```
 
 Scenario 4: Constant, then increasing life expectancy
 
 ```{r KM scenario4,echo=FALSE}
 set.seed(1)
-N=500
-#every individual was born each year during the 500 years
-Year.of.birth<-seq(1,N,1)
-mean_=mean(survival$Age.at.death)
-median_=median(survival$Age.at.death)
-meandep=0.5
-mediandep=0.5
-died=0
-died_alive=0
-adj1=0
-adj2=0
-born=0
-uncensor=0
-#simulate that the life expectancy is increasing during the last 41 years(1990-2010)
-start=460
-end=500
+## Define the number of years for simulation
+N <- 500
+## Every individual was born each year during the 500 years
+Year_of_birth <- seq(1, N, 1)
+## Get the mean and median from the dataset
+mean_orig <- mean(survival$Age.at.death)
+median_orig <- median(survival$Age.at.death)
+## Define the increasing rate of mean and median
+meandep <- 0.5
+mediandep <- 0.5
+died <- vector()
+died_alive <- vector()
+adj1 <- vector()
+adj2 <- vector()
+born <- vector()
+## Number of deaths since 465
+NumDeaths_died465 <- vector()
+## Number of deaths in 465 to 500
+NumDeaths_died465to500 <- vector()
+## Number of individuals born since 465
+Num_born465 <- vector()
+## Number of deaths in 465 to 500 among individuals born since 465
+NumDeaths_born465 <- vector()
+df <- data.frame(matrix(ncol=5,nrow=0, dimnames=list(NULL,
+                                      c("Year_of_birth",
+                                        "Year_of_death",
+                                        "Age_of_death",
+                                        "time","status"))))
+## Life expectancy firstly stabilize and then increase since 460
+start <- 460
+end <- 500
 for (i in 1:1000){
-#simulate survival time during 500 years
-Age.of.death<-weibull_eventtime_stop(mean_,median_,meandep,mediandep,N,start,end)
-Year.of.death<-Year.of.birth+Age.of.death
-  time=ifelse(Year.of.death>500,500-Year.of.birth,Age.of.death)
-  status=ifelse(Year.of.death>500,0,1)
-  df=data.frame(Year.of.birth,Year.of.death,Age.of.death,time,status)
-  #died since 465
-  df1=df%>%filter(Year.of.death>=465)
-  #born since 465
-  df2=df%>%filter(Year.of.birth>=465)
-  #KM medians  died since Year 465 
-  died.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1[df1$status==1,])
-  died[i]=unname(summary(died.fit)$table['median'])
-  #KM medians died since Year 465 plus alive(censored)
-  died_alive.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1)
-  died_alive[i]=unname(summary(died_alive.fit)$table['median'])
-  #adjusted KM died since 465 plus alive(censored) weights=0.1
-  df1=df1%>%mutate(weight=ifelse(Year.of.death>500,0.1,1)) 
-  adj1.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1,weights=weight)
-  adj1[i]=unname(summary(adj1.fit)$table['median'])
-  #adjusted KM died since 465 plus alive(censored) weights=uncensored fraction 
-  df1=df1%>%mutate(weight=ifelse(Year.of.death>500,sum(df1$status==1)/length(df1$status),1)) 
-  adj2.fit=survfit(Surv(time,status)~1,type='kaplan-meier',conf.type='log',data=df1,weights=weight)
-  adj2[i]=unname(summary(adj2.fit)$table['median'])
-  #KM medians born since 465(censored)
-  born.fit=survfit(Surv(Age.of.death,status)~1,type='kaplan-meier',conf.type='log',data=df2)
-  born[i]=unname(summary(born.fit)$table['median'])
+  ## Simulate survival time during 500 years
+  Age_of_death <- weibull_eventtime_stop(mean_orig, median_orig, 
+                                       meandep,mediandep,N,
+                                       start,end)
+  Year_of_death <- Year_of_birth+Age_of_death
+  ## Get the age at 500 of individuals who live after 500 (censored)
+  time <- ifelse(Year_of_death>500, 500-Year_of_birth, Age_of_death)
+  ## Determine status of individuals who live after 500 as censored(0)
+  status <- ifelse(Year_of_death>500, 0, 1)
+  df <- data.frame(Year_of_birth, Year_of_death, Age_of_death, 
+                   time, status)
+  ## Died since 465
+  df1 <- df %>% filter(Year_of_death>=465)
+  NumDeaths_died465[i] <- dim(df1)[1]
+  ## Died between 465 and 500
+  df2 <- df1 %>% filter(Year_of_death<=500)
+  NumDeaths_died465to500[i] <- dim(df2)[1]
+  ## Born since 465
+  df3 <- df %>% filter(Year_of_birth>=465)
+  Num_born465[i] <- dim(df3)[1]
+  ## Born since 465 and die before 500
+  df4 <- df3 %>% filter(Year_of_death<=500)
+  NumDeaths_born465[i] <- dim(df4)[1]
+  ## KM medians on died since Year 465(no censoring)
+  died_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                   conf.type='log', data=df1[df1$status==1,])
+  died[i] <- unname(summary(died_fit)$table['median'])
+  ## KM medians on died since Year 465 plus alive(censored)
+  died_alive_fit <- survfit(Surv(time,status)~1,
+                        type='kaplan-meier',
+                        conf.type='log',data=df1)
+  died_alive[i] <- unname(summary(died_alive_fit)$table['median'])
+  ## Adjusted KM died since 465 plus alive(censored) weights=0.1
+  df1 <- df1 %>% mutate(weight=ifelse(Year_of_death>500,0.1,1)) 
+  adj1_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                      conf.type='log', data=df1, weights=weight)
+  adj1[i] <- unname(summary(adj1_fit)$table['median'])
+  ## Adjusted KM died since 465 plus alive(censored), weights=uncensored fraction 
+  df1 <- df1 %>% mutate(weight=ifelse(Year_of_death>500,
+                                    sum(df1$status==1)/
+                                    length(df1$status),1)) 
+  adj2_fit <- survfit(Surv(time,status)~1, type='kaplan-meier',
+                      conf.type='log', data=df1, weights=weight)
+  adj2[i] <- unname(summary(adj2_fit)$table['median'])
+  ## KM medians born since 465(censored)
+  born_fit <- survfit(Surv(Age_of_death,status)~1,type='kaplan-meier',
+                      conf.type='log',data=df3)
+  born[i] <- unname(summary(born_fit)$table['median'])
 } 
-list("died.since.465"=mean(na.omit(died)),"died.since.465.plus.alive.at.500(censored)"=mean(na.omit(died_alive)),
-"weighted.by.0.1"=mean(na.omit(adj1)),"weighted.by.uncensored.fraction"=mean(na.omit(adj2)),"born.since.465"=mean(na.omit(born)))
+list("avg.num.deaths.465to500"=mean(NumDeaths_died465to500),
+     "avg.num.died.since465"=mean(NumDeaths_died465),
+     "avg.num.deaths.born465"=mean(NumDeaths_born465),
+     "avg.num.born.since465"=mean(Num_born465),
+     "died.since465"=mean(na.omit(died)),
+     "died.since465.plus.alive.at500(censored)"
+     =mean(na.omit(died_alive)),
+     "weighted.by.0.1"=mean(na.omit(adj1)),
+     "weighted.by.uncensored.fraction"=mean(na.omit(adj2)),
+     "born.since465"=mean(na.omit(born)))
 ```
