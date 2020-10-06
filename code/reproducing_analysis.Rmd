@@ -8,13 +8,13 @@ knitr::opts_chunk$set(echo = TRUE, fig.path="../figs/")
 ```
 
 ```{r survival,echo=FALSE}
-survival<-read.csv("../data/M_Type_A_survival.csv")
+survival <- read.csv("../data/M_Type_A_survival.csv")
 ```
 
 ```{r reproduce_analysis, echo=FALSE}
 mean(survival$Age.at.death)
 median(survival$Age.at.death)
-lm.reg<-lm(Age.at.death~Year.of.death,data=survival)
+lm.reg <- lm(Age.at.death~Year.of.death,data=survival)
 plot(survival$Year.of.death,survival$Age.at.death,pch=23,bg="black",ylab="Age at death(years)",xlab="Year")
 abline(lm.reg)
 legend("topright", bty="n", legend=paste("R^2 =", 
